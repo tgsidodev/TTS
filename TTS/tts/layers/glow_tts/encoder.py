@@ -147,6 +147,13 @@ class Encoder(nn.Module):
             - x_lengths: :math:`[B]`
             - g (optional): :math:`[B, 1, T]`
         """
+        # Ensure all tensors are on the same device as the embedding layer
+        emb_device = self.emb.weight.device
+        x = x.to(emb_device)
+        x_lengths = x_lengths.to(emb_device)
+        if g is not None:
+            g = g.to(emb_device)
+        
         # embedding layer
         # [B ,T, D]
         x = self.emb(x) * math.sqrt(self.hidden_channels)

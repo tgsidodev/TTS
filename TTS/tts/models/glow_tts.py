@@ -194,34 +194,21 @@ class GlowTTS(BaseTTS):
         self, x, x_lengths, y, y_lengths=None, aux_input={"d_vectors": None, "speaker_ids": None}
     ):  # pylint: disable=dangerous-default-value
         """
-        Args:
-            x (torch.Tensor):
-                Input text sequence ids. :math:`[B, T_en]`
-
-            x_lengths (torch.Tensor):
-                Lengths of input text sequences. :math:`[B]`
-
-            y (torch.Tensor):
-                Target mel-spectrogram frames. :math:`[B, T_de, C_mel]`
-
-            y_lengths (torch.Tensor):
-                Lengths of target mel-spectrogram frames. :math:`[B]`
-
-            aux_input (Dict):
-                Auxiliary inputs. `d_vectors` is speaker embedding vectors for a multi-speaker model.
-                :math:`[B, D_vec]`. `speaker_ids` is speaker ids for a multi-speaker model usind speaker-embedding
-                layer. :math:`B`
-
-        Returns:
-            Dict:
-                - z: :math: `[B, T_de, C]`
-                - logdet: :math:`B`
-                - y_mean: :math:`[B, T_de, C]`
-                - y_log_scale: :math:`[B, T_de, C]`
-                - alignments: :math:`[B, T_en, T_de]`
-                - durations_log: :math:`[B, T_en, 1]`
-                - total_durations_log: :math:`[B, T_en, 1]`
+        Shapes:
+            - x: :math:`[B, T]`
+            - x_lenghts: :math:`B`
+            - y: :math:`[B, T, C]`
+            - y_lengths: :math:`B`
+            - g: :math:`[B, C] or B`
         """
+        # Ensure all tensors are on the same device as the model
+        model_device = next(self.parameters()).device
+        x = x.to(model_device)
+        x_lengths = x_lengths.to(model_device)
+        y = y.to(model_device)
+        if y_lengths is not None:
+            y_lengths = y_lengths.to(model_device)
+        
         # [B, T, C] -> [B, C, T]
         y = y.transpose(1, 2)
         y_max_length = y.size(2)
@@ -381,12 +368,22 @@ class GlowTTS(BaseTTS):
             batch (dict): [description]
             criterion (nn.Module): [description]
         """
-        text_input = batch["text_input"]
-        text_lengths = batch["text_lengths"]
-        mel_input = batch["mel_input"]
-        mel_lengths = batch["mel_lengths"]
+        # Ensure all batch tensors are on the correct device
+        model_device = next(self.parameters()).device
+        text_input = batch["text_input"].to(model_device)
+        text_lengths = batch["text_lengths"].to(model_device)
+        mel_input = batch["mel_input"].to(model_device)
+        mel_lengths = batch["mel_lengths"].to(model_device)
         d_vectors = batch["d_vectors"]
         speaker_ids = batch["speaker_ids"]
+        
+        # Move d_vectors to device if it's a tensor
+        if d_vectors is not None and isinstance(d_vectors, torch.Tensor):
+            d_vectors = d_vectors.to(model_device)
+        
+        # Move speaker_ids to device if it's a tensor
+        if speaker_ids is not None and isinstance(speaker_ids, torch.Tensor):
+            speaker_ids = speaker_ids.to(model_device)
 
         if self.run_data_dep_init and self.training:
             # compute data-dependent initialization of activation norm layers

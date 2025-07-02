@@ -145,7 +145,7 @@ class BaseVCConfig(BaseTrainingConfig):
     test_sentences: List[str] = field(default_factory=lambda: [])
     # evaluation
     eval_split_max_size: int = None
-    eval_split_size: float = 0.01
+    eval_split_size: float = 0.05
     # weighted samplers
     use_speaker_weighted_sampler: bool = False
     speaker_weighted_sampler_alpha: float = 1.0
