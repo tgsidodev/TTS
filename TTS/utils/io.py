@@ -41,6 +41,17 @@ def load_fsspec(
     Returns:
         Object stored in path.
     """
+    # Add safe globals for PyTorch 2.6+ compatibility
+    try:
+        from TTS.tts.configs.xtts_config import XttsConfig
+        torch.serialization.add_safe_globals([XttsConfig])
+    except ImportError:
+        pass
+    
+    # Set weights_only=False for backward compatibility with older checkpoints
+    if "weights_only" not in kwargs:
+        kwargs["weights_only"] = False
+    
     is_local = os.path.isdir(path) or os.path.isfile(path)
     if cache and not is_local:
         with fsspec.open(
